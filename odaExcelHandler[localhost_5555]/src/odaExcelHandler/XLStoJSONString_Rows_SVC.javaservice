@@ -1,0 +1,220 @@
+package odaExcelHandler;
+
+import com.wm.data.*;
+import com.wm.util.Values;
+import com.wm.app.b2b.server.Service;
+import com.wm.app.b2b.server.ServiceException;
+import com.ibm.icu.text.SimpleDateFormat;
+import java.io.*;
+import java.util.*;
+import org.apache.poi.hssf.usermodel.*;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
+
+public final class XLStoJSONString_Rows_SVC
+
+{
+
+	/** 
+	 * The primary method for the Java service
+	 *
+	 * @param pipeline
+	 *            The IData pipeline
+	 * @throws ServiceException
+	 */
+	public static final void XLStoJSONString_Rows(IData pipeline) throws ServiceException {
+		IDataCursor pipelineCursor = pipeline.getCursor();
+		String	file_name = "";
+		
+		// data
+		IData	data = IDataUtil.getIData( pipelineCursor, "data" );
+		if ( data != null)
+		{
+			IDataCursor dataCursor = data.getCursor();
+				file_name = IDataUtil.getString( dataCursor, "file_name" );
+			dataCursor.destroy();
+		}
+		String	format = IDataUtil.getString( pipelineCursor, "format" );
+		pipelineCursor.destroy();
+		
+		// pipeline
+		IDataCursor pipelineCursor_1 = pipeline.getCursor();
+		
+		
+		
+		try{
+			HSSFWorkbook wb = null;
+			if (file_name != null)
+		    	wb = new HSSFWorkbook(new FileInputStream(file_name));
+			
+			MissingCellPolicy xRow = null;
+			wb.setMissingCellPolicy(xRow.CREATE_NULL_AS_BLANK);
+		    HSSFSheet sheet = (HSSFSheet) wb.getSheetAt(0);
+		    HSSFRow row = null;
+		    HSSFCell cell = null;
+		    String cl = "";
+		    
+		    
+		    
+		    //pega o numero de colunas na primeira linha e guarda os valores
+		    //do cabe\u00E7alho
+		    int cell_count = sheet.getRow(0).getPhysicalNumberOfCells();
+			String[] field_name = new String[cell_count];
+		    
+		    row = sheet.getRow(0);
+		    
+		    
+		    for (int k = 0; k < cell_count; k++)
+		    {
+		         cell = row.getCell((short)k);
+		         field_name[k] = build_name(cell.getStringCellValue());	
+		    }
+		    
+		    int	row_cnt = sheet.getPhysicalNumberOfRows();
+		    String JSONoutput = new String();
+		    String Saidas = new String();
+		 
+			    if(row_cnt > 2){
+					JSONoutput = "[";
+				}
+				    
+				    for (int j = 0; j < row_cnt - 1; j++){
+				    
+				    	row = sheet.getRow(j+1);
+				    	JSONoutput = JSONoutput.concat("{\"Linha "+ j +"\": {");
+				    	for(int k = 0; k < cell_count; k++){
+				    		
+				    		cell = row.getCell((short)k);
+				    		
+				    		CellType type = cell.getCellType();
+		
+				    		//Numeric:0,String:1,Formula:2,Blank:3,Boolean:4,Error:5
+						    
+						    //Problemas: nao le formulas, nao le datas, nao aceita blank na primeira e ultima coluna
+		
+								switch (type){
+								case NUMERIC: //numeric (FUNCIONA)
+			                   		if(k < cell_count - 1){
+						    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
+						    		}
+						    		if(k == cell_count - 1){
+						    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
+						    		}
+						    	break;
+						    	
+								case STRING: //string (FUNCIONA)
+									if(k < cell_count - 1){
+						    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+build_name(cell.getStringCellValue())+"\",");
+									}
+						    		if(k == cell_count - 1){
+						    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+build_name(cell.getStringCellValue())+"\"}");
+						    		}
+						    	break;
+			
+								case FORMULA: //formula										
+					            	if(k < cell_count - 1){
+						    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
+					            	}
+						    		if(k == cell_count - 1){
+						    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
+						    		}
+				                break;
+						    	
+								case BLANK: //blank (FUNCIONA se n\u00E3o for primeira ou ultima coluna)
+									
+									if(k < cell_count - 1){				
+			//									JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+"  "+"\",");
+			//					    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+"  "+"\",");
+										JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \"  \",");
+									}
+									if(k == cell_count - 1){
+			//									JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+"  "+"\"}");
+			//									JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+"  "+"\"}");
+										JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \"  \"}");
+									}
+					    		break;
+					    	
+						    	
+								case BOOLEAN: //boolean (FUNCIONA)
+						    		if(k < cell_count - 1){
+						    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+cell.getBooleanCellValue()+"\",");
+						    		}
+						    		if(k == cell_count - 1){
+						    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+cell.getBooleanCellValue()+"\"}");
+						    		}
+					    		break;
+						    	
+								case ERROR: //error
+								
+						    	break;
+						    	
+						    	
+						    	default:
+						    		
+						    	break;
+							    	
+								}
+			    	}
+				    	
+			    	if(j < row_cnt - 2){
+			    		JSONoutput = JSONoutput.concat("},");
+			    	}
+			    }
+			
+				    
+			    JSONoutput = JSONoutput.concat("}");
+			    if(row_cnt > 2){
+					JSONoutput = JSONoutput.concat("]");
+				}
+				    	
+		    IDataUtil.put( pipelineCursor_1, "saida", JSONoutput );
+			
+			pipelineCursor_1.destroy(); 
+		}catch (Exception e)
+		{
+			e.printStackTrace();
+		}		
+	}
+	
+	// --- <<IS-BEGIN-SHARED-SOURCE-AREA>> ---
+	
+	
+	
+	public static String build_name(String str)
+	{
+	  String name = "";
+	  StringTokenizer strtok = new StringTokenizer(str," ");
+	  String temp = "";
+	  int count = 0;
+	  while (strtok.hasMoreElements())
+	  {
+	    temp = (String)strtok.nextElement();
+	    if (count == 0)
+	        name = temp;
+	    else name += "_"+temp;
+	
+	    count++;
+	  }
+	  return name;
+	}
+	
+		
+	
+	// --- <<IS-END-SHARED-SOURCE-AREA>> ---
+
+	/**
+	 * The service implementations given below are read-only and show only the
+	 * method definitions and not the complete implementation.
+	 */
+	public static final void XLStoJSONString_RowsColumns(IData pipeline) throws ServiceException {
+	}
+	public static final void XLStoJSONString_Columns(IData pipeline) throws ServiceException {
+	}
+
+	final static XLStoJSONString_Rows_SVC _instance = new XLStoJSONString_Rows_SVC();
+
+	static XLStoJSONString_Rows_SVC _newInstance() { return new XLStoJSONString_Rows_SVC(); }
+
+	static XLStoJSONString_Rows_SVC _cast(Object o) { return (XLStoJSONString_Rows_SVC)o; }
+
+}
