@@ -219,9 +219,9 @@ public final class XLStoJSONString_RowsColumns_SVC
 	 * The service implementations given below are read-only and show only the
 	 * method definitions and not the complete implementation.
 	 */
-	public static final void XLStoJSONString_Rows(IData pipeline) throws ServiceException {
-	}
 	public static final void XLStoJSONString_Columns(IData pipeline) throws ServiceException {
+	}
+	public static final void XLStoJSONString_Rows(IData pipeline) throws ServiceException {
 	}
 
 	final static XLStoJSONString_RowsColumns_SVC _instance = new XLStoJSONString_RowsColumns_SVC();
