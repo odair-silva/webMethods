@@ -50,6 +50,7 @@ public final class XLStoJSONString_RowsColumns_SVC
 		    HSSFSheet sheet = (HSSFSheet) wb.getSheetAt(0);
 		    HSSFRow row = null;
 		    HSSFCell cell = null;  
+		    double icl = 0;
 		    
 		    //pega o numero de colunas na primeira linha 
 		    int cell_count = sheet.getRow(0).getPhysicalNumberOfCells() + 1;
@@ -94,14 +95,36 @@ public final class XLStoJSONString_RowsColumns_SVC
 			    		
 					switch (type){
 					
-						case NUMERIC: //numeric (FUNCIONA)
-				       		if(k < cell_count - 1){
-				    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
+					case NUMERIC: //numeric (FUNCIONA)
+						icl = cell.getNumericCellValue();
+		        		if (isCellDateFormatted(cell))
+		        		{
+		            		// format in form of M/D/YY
+		            		Calendar cal = Calendar.getInstance();
+		            		cal.setTime(getJavaDate(icl,false));
+		            		String pattern = "dd/MM/yyy";
+		            		SimpleDateFormat df = new SimpleDateFormat(pattern);
+		            		String dateStr = df.format(cal.getTime());
+		            		
+		            		if(k < cell_count - 1){
+				    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+dateStr+"\",");
+				    		}
+				    		if(k == cell_count - 1){
+				    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+dateStr+"\"}");
+				    		}
+		
+		        		}
+		        		else{
+		               		if(k < cell_count - 1){
+		               			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
+		               			
 				    		}
 				    		if(k == cell_count - 1){
 				    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
+				    			
 				    		}
-				    	break;
+		        		}
+			    	break;
 				    	
 						case STRING: //string (FUNCIONA)
 							if(k < cell_count - 1){
@@ -142,8 +165,17 @@ public final class XLStoJSONString_RowsColumns_SVC
 				    		}
 						break;
 						
-						default:
+						case ERROR: //string (FUNCIONA)
+							if(k < cell_count - 1){
+				    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
+							}
+				    		if(k == cell_count - 1){
+				    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
+				    		}
+				    	break;
 						
+						default:
+							
 						break;
 					}
 		    	}
@@ -171,10 +203,74 @@ public final class XLStoJSONString_RowsColumns_SVC
 	
 	// --- <<IS-BEGIN-SHARED-SOURCE-AREA>> ---
 	
+	private static final long   DAY_MILLISECONDS  = 24 * 60 * 60 * 1000;
 	
+	public static boolean isValidExcelDate(double value)
+	{
+	    return (value > -Double.MIN_VALUE);
+	}
 	
+	//////////////////////////////////////////////////////////////////
+	// method to determine if the cell is a date, versus a number...
+	public static boolean isCellDateFormatted(HSSFCell cell) {
 	
+		boolean bDate = false;
 	
+		double d = cell.getNumericCellValue();
+		if ( isValidExcelDate(d) ) {
+			HSSFCellStyle style = cell.getCellStyle();
+			int i = style.getDataFormat();
+	
+			switch(i) {
+				// Internal Date Formats as described on page 427 in Microsoft Excel Dev's Kit...
+				case 0x0e:
+				case 0x0f:
+				case 0x10:
+				case 0x11:
+				case 0x12:
+				case 0x13:
+				case 0x14:
+				case 0x15:
+				case 0x16:
+				case 0x2d:
+				case 0x2e:
+				case 0x2f:
+				case 0xb2:
+				bDate = true;
+				break;
+				
+				default:
+				bDate = false;
+				break;
+				}
+		}
+		
+		return bDate;
+	}
+	
+	public static Date getJavaDate(double date, boolean use1904windowing) {
+	    if (isValidExcelDate(date)) {
+	        int startYear = 1900;
+	        int dayAdjust = -1; // Excel thinks 2/29/1900 is a valid date, which it isn't
+	        int wholeDays = (int)Math.floor(date);
+	        if (use1904windowing) {
+	            startYear = 1904;
+	            dayAdjust = 1; // 1904 date windowing uses 1/2/1904 as the first day
+	        }
+	        else if (wholeDays < 61) {
+	            // Date is prior to 3/1/1900, so adjust because Excel thinks 2/29/1900 exists
+	            // If Excel date == 2/29/1900, will become 3/1/1900 in Java representation
+	            dayAdjust = 0;
+	        }
+	        GregorianCalendar calendar = new GregorianCalendar(startYear,0, wholeDays + dayAdjust);
+	        int millisecondsInDay = (int)((date - Math.floor(date)) * (double) DAY_MILLISECONDS + 0.5);
+	        calendar.set(GregorianCalendar.MILLISECOND, millisecondsInDay);
+	        return calendar.getTime();
+	    }
+	    else {
+	        return null;
+	    }
+	}
 		
 	
 	// --- <<IS-END-SHARED-SOURCE-AREA>> ---
