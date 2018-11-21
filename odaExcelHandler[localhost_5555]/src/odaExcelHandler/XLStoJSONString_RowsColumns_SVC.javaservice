@@ -79,7 +79,6 @@ public final class XLStoJSONString_RowsColumns_SVC
 		    }
 		    
 		    String JSONoutput = new String();
-		    FormulaEvaluator evaluator = wb.getCreationHelper().createFormulaEvaluator();
 		 
 		    if(row_cnt > 2){
 				JSONoutput = "[";

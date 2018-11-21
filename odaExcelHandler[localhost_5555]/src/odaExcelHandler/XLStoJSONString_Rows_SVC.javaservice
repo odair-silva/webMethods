@@ -9,7 +9,10 @@ import java.io.*;
 import java.util.*;
 import org.apache.poi.hssf.usermodel.*;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
+import org.apache.poi.ss.usermodel.FormulaError;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 
 public final class XLStoJSONString_Rows_SVC
 
@@ -86,9 +89,6 @@ public final class XLStoJSONString_Rows_SVC
 						case NUMERIC: //numeric (FUNCIONA)
 							icl = cell.getNumericCellValue();
 							
-							HSSFCellStyle style = cell.getCellStyle();
-							int i = style.getDataFormat();
-							
 		            		if (isCellDateFormatted(cell))
 		            		{
 		                		// format in form of M/D/YY
@@ -126,13 +126,33 @@ public final class XLStoJSONString_Rows_SVC
 				    	break;
 		
 						case FORMULA: //formula										
-			            	if(k < cell_count - 1){
-				    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
-			            	}
-				    		if(k == cell_count - 1){
-				    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
-				    		}
-		                break;
+							switch(cell.getCachedFormulaResultType()){
+							case ERROR:
+								String error = FormulaError.forInt(cell.getErrorCellValue()).getString();
+								if(k < cell_count - 1){
+			               			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+error+"\",");
+					    		}
+					    		if(k == cell_count - 1){
+					    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+error+"\"}");
+					    		}
+							break;
+							
+							case NUMERIC:
+								if(k < cell_count - 1){
+			               			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
+			               			
+					    		}
+					    		if(k == cell_count - 1){
+					    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
+					    			
+					    		}
+							break;
+						
+							default:
+							break;
+							}
+							
+						break;
 				    	
 						case BLANK: //blank (FUNCIONA se n\u00E3o for primeira ou ultima coluna)
 							if(k < cell_count - 1){				
@@ -152,6 +172,17 @@ public final class XLStoJSONString_Rows_SVC
 				    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+cell.getBooleanCellValue()+"\"}");
 				    		}
 			    		break;
+			    		
+						case ERROR: //
+							
+							if(k < cell_count - 1){
+								JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \" ERRO \",");
+				    		}
+				    		if(k == cell_count - 1){
+				    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \" ERRO \"}");
+				    		}
+							
+				    	break;
 		
 				    	default:
 				    		
