@@ -7,7 +7,7 @@ Examples below:
 
 ---
 
-#### Case 1
+#### XLStoJSONString_Rows
 
 
 
@@ -63,7 +63,7 @@ _ | A | B | C | ... | Last Column
  
 ---
 
-#### Case 2 
+#### XLStoJSONString_RowsColumns 
 
 
 
