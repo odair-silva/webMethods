@@ -9,10 +9,8 @@ import java.io.*;
 import java.util.*;
 import org.apache.poi.hssf.usermodel.*;
 import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.CellValue;
 import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
 import org.apache.poi.ss.usermodel.FormulaError;
-import org.apache.poi.ss.usermodel.FormulaEvaluator;
 
 public final class XLStoJSONString_Rows_SVC
 
@@ -29,7 +27,6 @@ public final class XLStoJSONString_Rows_SVC
 		IDataCursor pipelineCursor = pipeline.getCursor();
 		String	file_name = "";
 		
-		// data
 		IData	data = IDataUtil.getIData( pipelineCursor, "data" );
 		if ( data != null)
 		{
@@ -39,7 +36,6 @@ public final class XLStoJSONString_Rows_SVC
 		}
 		pipelineCursor.destroy();
 		
-		// pipeline
 		IDataCursor pipelineCursor_1 = pipeline.getCursor();
 		
 		try{
@@ -51,159 +47,56 @@ public final class XLStoJSONString_Rows_SVC
 		    HSSFSheet sheet = (HSSFSheet) wb.getSheetAt(0);
 		    HSSFRow row = null;
 		    HSSFCell cell = null;
-		    double icl = 0;
 		
-		    //pega o numero de colunas na primeira linha
-		    int cell_count = sheet.getRow(0).getPhysicalNumberOfCells();
-			String[] field_name = new String[cell_count];
+		  //get headers row size || number of columns
+		    int cell_count = sheet.getRow(0).getLastCellNum();
+		    
+			String[] column_name = new String[cell_count];
 		    
 		    row = sheet.getRow(0);
 		
+		    //skip first cell and create the headers vector
 		    for (int k = 0; k < cell_count; k++){
 		         cell = row.getCell((short)k);
-		         field_name[k] = cell.getStringCellValue();	
+		         column_name[k] = cell.getStringCellValue();	
 		    }
 		    
+		    //get number of rows
 		    int	row_cnt = sheet.getPhysicalNumberOfRows();
+		    
+		    //output string
 		    String JSONoutput = new String();
 		 
+		    //if there are more than 2 rows it becomes a JSON vector
 		    if(row_cnt > 2){
 				JSONoutput = "[";
 			}
-				    
+			
+		    //this is where every cell is checked via dealWithCellType function
 		    for (int j = 0; j < row_cnt - 1; j++){
 		    
 		    	row = sheet.getRow(j+1);
 		    	JSONoutput = JSONoutput.concat("{\"Linha "+ j +"\": {");
-		    	
 		    	for(int k = 0; k < cell_count; k++){
 		    		
 		    		cell = row.getCell((short)k);
-		    		
 		    		CellType type = cell.getCellType();
 		
-				    //Problemas: nao le datas
-		
-					switch (type){
-					
-						case NUMERIC: //numeric (FUNCIONA)
-							icl = cell.getNumericCellValue();
-							
-		            		if (isCellDateFormatted(cell))
-		            		{
-		                		// format in form of M/D/YY
-		                		Calendar cal = Calendar.getInstance();
-		                		cal.setTime(getJavaDate(icl,false));
-		                		String pattern = "dd-MM-yy";
-		                		SimpleDateFormat df = new SimpleDateFormat(pattern);
-		                		String dateStr = df.format(cal.getTime());
-		                		
-		                		if(k < cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+dateStr+"\",");
-					    		}
-					    		if(k == cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+dateStr+"\"}");
-					    		}
-		
-		            		}
-		            		else{
-			               		if(k < cell_count - 1){
-			               			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
-					    		}
-					    		if(k == cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
-					    		}
-		            		}
-				    	break;
-				    	
-						case STRING: //string (FUNCIONA)
-							if(k < cell_count - 1){
-				    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+cell.getStringCellValue()+"\",");
-							}
-				    		if(k == cell_count - 1){
-				    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+cell.getStringCellValue()+"\"}");
-				    		}
-				    	break;
-		
-						case FORMULA: //formula										
-							switch(cell.getCachedFormulaResultType()){
-							case ERROR:
-								String error = FormulaError.forInt(cell.getErrorCellValue()).getString();
-								if(k < cell_count - 1){
-			               			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+error+"\",");
-					    		}
-					    		if(k == cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+error+"\"}");
-					    		}
-							break;
-							
-							case NUMERIC:
-								if(k < cell_count - 1){
-			               			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
-			               			
-					    		}
-					    		if(k == cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
-					    			
-					    		}
-							break;
-						
-							default:
-							break;
-							}
-							
-						break;
-				    	
-						case BLANK: //blank (FUNCIONA se n\u00E3o for primeira ou ultima coluna)
-							if(k < cell_count - 1){				
-								JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \"  \",");
-							}
-							if(k == cell_count - 1){
-								JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \"  \"}");
-							}
-			    		break;
-			    	
-				    	
-						case BOOLEAN: //boolean (FUNCIONA)
-				    		if(k < cell_count - 1){
-				    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+cell.getBooleanCellValue()+"\",");
-				    		}
-				    		if(k == cell_count - 1){
-				    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \""+cell.getBooleanCellValue()+"\"}");
-				    		}
-			    		break;
-			    		
-						case ERROR: //
-							
-							if(k < cell_count - 1){
-								JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \" ERRO \",");
-				    		}
-				    		if(k == cell_count - 1){
-				    			JSONoutput = JSONoutput.concat("\""+field_name[k]+"\" : \" ERRO \"}");
-				    		}
-							
-				    	break;
-		
-				    	default:
-				    		
-				    	break;
-					    	
-					}
+		    		JSONoutput = dealWithCellType(type, JSONoutput, k, column_name[k], cell_count, cell);
 		    	}
 		    	
 		    	if(j < row_cnt - 2){
 		    		JSONoutput = JSONoutput.concat("},");
 		    	}
-		    
 		    }
 			
 				    
 		    JSONoutput = JSONoutput.concat("}");
-			
 		    if(row_cnt > 2){
 				JSONoutput = JSONoutput.concat("]");
 			}
-				    	
+				
+		    //outputs JSONoutput to saida
 		    IDataUtil.put( pipelineCursor_1, "saida", JSONoutput );
 			
 			pipelineCursor_1.destroy(); 
@@ -211,10 +104,109 @@ public final class XLStoJSONString_Rows_SVC
 		}catch (Exception e)
 		{
 			e.printStackTrace();
-		}		
+		}	
+		
+		
+		
+		
+		
+			
 	}
 	
 	// --- <<IS-BEGIN-SHARED-SOURCE-AREA>> ---
+	
+	public static String dealWithCellType (CellType type, String JSONoutput, int k, String column_name, int cell_count, HSSFCell cell){
+		
+		String JSONintermediario = new String();
+	    String cellString = new String();
+		
+		switch (type){
+		
+			case NUMERIC: //numeric (FUNCIONA)
+			double icl = cell.getNumericCellValue();
+			if (isCellDateFormatted(cell))
+			{
+	    		// format in form of M/D/YY
+	    		Calendar cal = Calendar.getInstance();
+	    		cal.setTime(getJavaDate(icl,false));
+	    		String pattern = "dd/MM/yyy";
+	    		SimpleDateFormat df = new SimpleDateFormat(pattern);
+	    		String dateStr = df.format(cal.getTime());
+	    		
+	    		JSONintermediario = concatJSONOutput(JSONoutput, k, column_name, cell_count, dateStr);
+				JSONoutput = JSONintermediario;
+	
+			}
+			else{
+				cellString = Double.toString((cell.getNumericCellValue()));
+				JSONintermediario = concatJSONOutput(JSONoutput, k, column_name, cell_count, cellString);
+				JSONoutput = JSONintermediario;
+			}
+			
+			break;
+	    	
+			case STRING: //string (FUNCIONA)
+				
+				cellString = cell.getStringCellValue();
+				JSONintermediario = concatJSONOutput(JSONoutput, k, column_name, cell_count, cellString);
+				JSONoutput = JSONintermediario;
+	
+	    	break;
+	
+			case FORMULA: //formula	 (FUNCIONA)		
+				switch(cell.getCachedFormulaResultType()){
+					case ERROR:
+						
+						cellString = FormulaError.forInt(cell.getErrorCellValue()).getString();
+						JSONintermediario = concatJSONOutput(JSONoutput, k, column_name, cell_count, cellString);
+						JSONoutput = JSONintermediario;
+						
+					break;
+					
+					case NUMERIC:
+						
+						cellString = Double.toString((cell.getNumericCellValue()));
+						JSONintermediario = concatJSONOutput(JSONoutput, k, column_name, cell_count, cellString);
+						JSONoutput = JSONintermediario;
+						
+					break;
+				
+					default:
+					break;
+				}
+			break;
+	    	
+			case BLANK: //blank (FUNCIONA se não for primeira ou ultima coluna)
+				
+				cellString = " ";
+				JSONintermediario = concatJSONOutput(JSONoutput, k, column_name, cell_count, cellString);
+				JSONoutput = JSONintermediario;
+				
+			break;
+		
+			case BOOLEAN: //boolean (FUNCIONA)
+				
+				cellString = String.valueOf(cell.getBooleanCellValue());
+				JSONintermediario = concatJSONOutput(JSONoutput, k, column_name, cell_count, cellString);
+				JSONoutput = JSONintermediario;
+				
+			break;
+			
+			case ERROR: //
+				
+				cellString = "ERROR";
+				JSONintermediario = concatJSONOutput(JSONoutput, k, column_name, cell_count, cellString);
+				JSONoutput = JSONintermediario;
+				
+	    	break;
+	
+			default:
+				
+			break;
+		}
+		return JSONoutput;
+	}
+	
 	
 	public static String concatJSONOutput (String JSONintermediario, int k, String info, int cell_count, String value){
 		if(k < cell_count - 1){
