@@ -216,6 +216,16 @@ public final class XLStoJSONString_Rows_SVC
 	
 	// --- <<IS-BEGIN-SHARED-SOURCE-AREA>> ---
 	
+	public static String concatJSONOutput (String JSONintermediario, int k, String info, int cell_count, String value){
+		if(k < cell_count - 1){
+			JSONintermediario = JSONintermediario.concat("\""+info+"\" : \""+value+"\",");
+		}
+		if(k == cell_count - 1){
+			JSONintermediario = JSONintermediario.concat("\""+info+"\" : \""+value+"\"}");
+		}
+		return JSONintermediario;
+	}
+	
 	private static final long   DAY_MILLISECONDS  = 24 * 60 * 60 * 1000;
 	
 	public static boolean isValidExcelDate(double value)

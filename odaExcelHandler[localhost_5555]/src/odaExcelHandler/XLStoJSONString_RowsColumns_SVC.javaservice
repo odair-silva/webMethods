@@ -79,6 +79,8 @@ public final class XLStoJSONString_RowsColumns_SVC
 		    }
 		    
 		    String JSONoutput = new String();
+		    String JSONintermediario = new String();
+		    String cellString = new String();
 		 
 		    if(row_cnt > 2){
 				JSONoutput = "[";
@@ -91,10 +93,9 @@ public final class XLStoJSONString_RowsColumns_SVC
 		    	for(int k = 1; k < cell_count; k++){
 		    		
 					cell = row.getCell((short)k);
-					
 					CellType type = cell.getCellType();
-					    
-				    //Problemas: nao le datas
+					
+					
 			    		
 						switch (type){
 						
@@ -109,93 +110,70 @@ public final class XLStoJSONString_RowsColumns_SVC
 			            		SimpleDateFormat df = new SimpleDateFormat(pattern);
 			            		String dateStr = df.format(cal.getTime());
 			            		
-			            		if(k < cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+dateStr+"\",");
-					    		}
-					    		if(k == cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+dateStr+"\"}");
-					    		}
+			            		JSONintermediario = concatJSONOutput(JSONoutput, k, column_name[k], cell_count, dateStr);
+								JSONoutput = JSONintermediario;
 			
 			        		}
 			        		else{
-			               		if(k < cell_count - 1){
-			               			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
-			               			
-					    		}
-					    		if(k == cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
-					    			
-					    		}
+			        			cellString = Double.toString((cell.getNumericCellValue()));
+								JSONintermediario = concatJSONOutput(JSONoutput, k, column_name[k], cell_count, cellString);
+								JSONoutput = JSONintermediario;
 			        		}
 			        		
 			        		break;
 					    	
 							case STRING: //string (FUNCIONA)
-								if(k < cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+cell.getStringCellValue()+"\",");
-								}
-					    		if(k == cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+cell.getStringCellValue()+"\"}");
-					    		}
+								
+								cellString = cell.getStringCellValue();
+								JSONintermediario = concatJSONOutput(JSONoutput, k, column_name[k], cell_count, cellString);
+								JSONoutput = JSONintermediario;
+		
 					    	break;
 					
 							case FORMULA: //formula	 (FUNCIONA)		
 								switch(cell.getCachedFormulaResultType()){
 									case ERROR:
-										String error = FormulaError.forInt(cell.getErrorCellValue()).getString();
-										if(k < cell_count - 1){
-					               			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+error+"\",");
-							    		}
-							    		if(k == cell_count - 1){
-							    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+error+"\"}");
-							    		}
+										
+										cellString = FormulaError.forInt(cell.getErrorCellValue()).getString();
+										JSONintermediario = concatJSONOutput(JSONoutput, k, column_name[k], cell_count, cellString);
+										JSONoutput = JSONintermediario;
+										
 									break;
 									
 									case NUMERIC:
-										if(k < cell_count - 1){
-					               			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\",");
-					               			
-							    		}
-							    		if(k == cell_count - 1){
-							    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+Double.toString((cell.getNumericCellValue()))+"\"}");
-							    			
-							    		}
+										
+										cellString = Double.toString((cell.getNumericCellValue()));
+										JSONintermediario = concatJSONOutput(JSONoutput, k, column_name[k], cell_count, cellString);
+										JSONoutput = JSONintermediario;
+										
 									break;
 								
 									default:
 									break;
 								}
-								
-			
-					        break;
+							break;
 					    	
 							case BLANK: //blank (FUNCIONA se n\u00E3o for primeira ou ultima coluna)
 								
-								if(k < cell_count - 1){				
-											JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \"  \",");
-								}
-								if(k == cell_count - 1){
-											JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \"  \"}");
-								}
+								cellString = " ";
+								JSONintermediario = concatJSONOutput(JSONoutput, k, column_name[k], cell_count, cellString);
+								JSONoutput = JSONintermediario;
+								
 							break;
 						
 							case BOOLEAN: //boolean (FUNCIONA)
-					    		if(k < cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+cell.getBooleanCellValue()+"\",");
-					    		}
-					    		if(k == cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \""+cell.getBooleanCellValue()+"\"}");
-					    		}
+								
+								cellString = String.valueOf(cell.getBooleanCellValue());
+								JSONintermediario = concatJSONOutput(JSONoutput, k, column_name[k], cell_count, cellString);
+								JSONoutput = JSONintermediario;
+								
 							break;
 							
 							case ERROR: //
 								
-								if(k < cell_count - 1){
-									JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \" ERRO \",");
-					    		}
-					    		if(k == cell_count - 1){
-					    			JSONoutput = JSONoutput.concat("\""+column_name[k]+"\" : \" ERRO \"}");
-					    		}
+								cellString = "ERROR";
+								JSONintermediario = concatJSONOutput(JSONoutput, k, column_name[k], cell_count, cellString);
+								JSONoutput = JSONintermediario;
 								
 					    	break;
 					
@@ -227,6 +205,16 @@ public final class XLStoJSONString_RowsColumns_SVC
 	}
 	
 	// --- <<IS-BEGIN-SHARED-SOURCE-AREA>> ---
+	
+	public static String concatJSONOutput (String JSONintermediario, int k, String info, int cell_count, String value){
+		if(k < cell_count - 1){
+			JSONintermediario = JSONintermediario.concat("\""+info+"\" : \""+value+"\",");
+		}
+		if(k == cell_count - 1){
+			JSONintermediario = JSONintermediario.concat("\""+info+"\" : \""+value+"\"}");
+		}
+		return JSONintermediario;
+	}
 	
 	private static final long   DAY_MILLISECONDS  = 24 * 60 * 60 * 1000;
 	
