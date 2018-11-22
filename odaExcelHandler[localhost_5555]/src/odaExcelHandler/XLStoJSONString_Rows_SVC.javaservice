@@ -67,16 +67,13 @@ public final class XLStoJSONString_Rows_SVC
 		    //output string
 		    String JSONoutput = new String();
 		 
-		    //if there are more than 2 rows it becomes a JSON vector
-		    if(row_cnt > 2){
-				JSONoutput = "[";
-			}
+		    JSONoutput = JSONoutput.concat("{");
 			
 		    //this is where every cell is checked via dealWithCellType function
 		    for (int j = 0; j < row_cnt - 1; j++){
 		    
 		    	row = sheet.getRow(j+1);
-		    	JSONoutput = JSONoutput.concat("{\"Linha "+ j +"\": {");
+		    	JSONoutput = JSONoutput.concat("\"Row "+ j +"\": {");
 		    	for(int k = 0; k < cell_count; k++){
 		    		
 		    		cell = row.getCell((short)k);
@@ -91,11 +88,8 @@ public final class XLStoJSONString_Rows_SVC
 		    }
 			
 				    
-		    JSONoutput = JSONoutput.concat("}");
-		    if(row_cnt > 2){
-				JSONoutput = JSONoutput.concat("]");
-			}
-				
+		    JSONoutput = JSONoutput.concat("}}");
+		
 		    //outputs JSONoutput to saida
 		    IDataUtil.put( pipelineCursor_1, "saida", JSONoutput );
 			
@@ -213,7 +207,7 @@ public final class XLStoJSONString_Rows_SVC
 			JSONintermediario = JSONintermediario.concat("\""+info+"\" : \""+value+"\",");
 		}
 		if(k == cell_count - 1){
-			JSONintermediario = JSONintermediario.concat("\""+info+"\" : \""+value+"\"}");
+			JSONintermediario = JSONintermediario.concat("\""+info+"\" : \""+value+"\"");
 		}
 		return JSONintermediario;
 	}
